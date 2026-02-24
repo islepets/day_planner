@@ -1,5 +1,6 @@
 using static System.Windows.Forms.LinkLabel;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox;
+using Ежедневник;
 
 namespace Ежедневник
 {

@@ -11,10 +11,12 @@ public class MNotes : Form
     private RichTextBox rtb, rtb1;
     private Panel pnl;
     private PictureBox pcb;
+    private TextBox txt, txt1;
 
     private bool isInterfaceVisible = false;
     private bool isInterfaceVisibleCreate = false;
     private bool isEdit = true;
+    private int globalIDTitle;
 
     public MNotes()
     {
@@ -59,10 +61,10 @@ public class MNotes : Form
         pnl = CreatePanel(0, 0, 300, 800, "#A8D0E6");
         this.Controls.Add(pnl);
 
-        bt3 = CreateButton("Редактировать", 1250, 600, 200, 50);
+        bt3 = CreateButton("Редактировать", 1250, 650, 200, 50);
         this.Controls.Add(bt3);
 
-        bt4 = CreateButton("Удалить", 1250, 650, 200, 50);
+        bt4 = CreateButton("Удалить", 1250, 700, 200, 50);
         this.Controls.Add(bt4);
 
         bt5 = CreateButton("Сохранить", 1250, 700, 200, 50);
@@ -71,16 +73,140 @@ public class MNotes : Form
         bt6 = CreateButton("Создать", 1250, 700, 200, 50);
         this.Controls.Add(bt6);
 
+        txt = CreateTextBox();
+        this.Controls.Add(txt);
+
+        txt1 = CreateTextBox();
+        this.Controls.Add(txt1);
+
         HideViewInterface();
         bt0.Click += SwitchView;
         bt.Click += SwitchViewCreate;
         bt5.Click += SaveChanges;
-        bt3.Click += EditView; 
+        bt3.Click += EditView;
+        bt4.Click += DeleteNotes;
+
         bt6.Visible = false;
         rtb1.Visible = false;
+        txt1.Visible = false;
 
         rtb.ReadOnly = isEdit;
         rtb.BackColor = Color.Gray;
+        txt.ReadOnly = isEdit;
+        txt.BackColor = Color.Gray;
+
+        DatabaseHelper bd = new DatabaseHelper();
+        if (bd.HasAnyNotes())
+        {
+            globalIDTitle = bd.GetTitleIdMin();
+            txt.Text = bd.GetStringtionNotes(globalIDTitle, "Заголовок");
+            rtb.Text = bd.GetStringtionNotes(globalIDTitle, "Описание");
+        }
+        else
+        {
+            HideViewInterface();
+            MessageBox.Show("Нет самостоятельных заметок", "Информация",
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        bt1.Click += DecGlobalId;
+        bt2.Click += IncGlobalId;
+        bt6.Click += CreateNotes;
+    }
+
+    public void CreateNotes(object sender, EventArgs e)
+    {
+        DatabaseHelper bd = new DatabaseHelper();
+        int id = bd.GetTitleIdMax();
+        if ((txt1.Text == "") && (rtb1.Text == "")) return;
+        bd.CreateNotes(id + 1, txt1.Text, rtb1.Text);
+        txt1.Text = "";
+        rtb1.Text = "";
+    }
+
+    public void DeleteNotes(object sender, EventArgs e)
+    {
+        DatabaseHelper bd = new DatabaseHelper();
+        bool deleted = bd.DeleteNotes(globalIDTitle);
+
+        if (deleted)
+        {
+            if (bd.HasAnyNotes())
+            {
+                int nextId = bd.GetNextExistingId(globalIDTitle);
+
+                if (nextId != -1)
+                {
+                    globalIDTitle = nextId;
+                }
+                else
+                {
+                    int prevId = bd.GetPreviousExistingId(globalIDTitle);
+                    if (prevId != -1)
+                    {
+                        globalIDTitle = prevId;
+                    }
+                }
+
+                txt.Text = bd.GetStringtionNotes(globalIDTitle, "Заголовок");
+                rtb.Text = bd.GetStringtionNotes(globalIDTitle, "Описание");
+            }
+            else
+            {
+                txt.Text = "";
+                rtb.Text = "";
+                MessageBox.Show("Все заметки удалены", "Информация",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+
+            UpdateNavigationButtons();
+        }
+    }
+
+    private void UpdateNavigationButtons()
+    {
+        DatabaseHelper bd = new DatabaseHelper();
+
+        if (bd.HasAnyNotes())
+        {
+            int maxId = bd.GetTitleIdMax();
+            int minId = bd.GetTitleIdMin();
+
+            bt1.Enabled = (globalIDTitle > minId);
+            bt2.Enabled = (globalIDTitle < maxId);
+        }
+        else
+        {
+            bt1.Enabled = false;
+            bt2.Enabled = false;
+        }
+    }
+
+    public void IncGlobalId(object sender, EventArgs e)
+    {
+        DatabaseHelper bd = new DatabaseHelper();
+        int nextId = bd.GetNextExistingId(globalIDTitle);
+
+        if (nextId != -1)
+        {
+            globalIDTitle = nextId;
+            txt.Text = bd.GetStringtionNotes(globalIDTitle, "Заголовок");
+            rtb.Text = bd.GetStringtionNotes(globalIDTitle, "Описание");
+            UpdateNavigationButtons();
+        }
+    }
+    public void DecGlobalId(object sender, EventArgs e)
+    {
+        DatabaseHelper bd = new DatabaseHelper();
+        int prevId = bd.GetPreviousExistingId(globalIDTitle);
+
+        if (prevId != -1)
+        {
+            globalIDTitle = prevId;
+            txt.Text = bd.GetStringtionNotes(globalIDTitle, "Заголовок");
+            rtb.Text = bd.GetStringtionNotes(globalIDTitle, "Описание");
+            UpdateNavigationButtons();
+        }
     }
 
     public void EditView(object sender, EventArgs e)
@@ -92,8 +218,9 @@ public class MNotes : Form
     public void SaveChanges(object sender, EventArgs e)
     {
         isEdit = true; 
+        DatabaseHelper bd = new DatabaseHelper();
+        bd.UpdateStringNotes(globalIDTitle, txt.Text, rtb.Text);
         UpdateEditMode();
-
     }
 
     private void UpdateEditMode()
@@ -102,6 +229,8 @@ public class MNotes : Form
         {
             rtb.ReadOnly = true;
             rtb.BackColor = Color.Gray;
+            txt.ReadOnly = true;
+            txt.BackColor = Color.Gray;
             bt5.Visible = false; 
             bt3.Visible = true;
             bt4.Visible = true;  
@@ -110,6 +239,8 @@ public class MNotes : Form
         {
             rtb.ReadOnly = false;
             rtb.BackColor = SystemColors.Window;
+            txt.ReadOnly = false;
+            txt.BackColor = SystemColors.Window;
             bt5.Visible = true;
             bt3.Visible = false; 
             bt4.Visible = false; 
@@ -125,12 +256,14 @@ public class MNotes : Form
         if (isInterfaceVisibleCreate == true)
         {
             rtb1.Visible = true;
+            txt1.Visible = true;
             pcb.Visible = false;
             bt6.Visible = true;
         }
         else
         {
             rtb1.Visible = false;
+            txt1.Visible = false; 
             pcb.Visible = true;
             bt6.Visible = false;
         }
@@ -140,6 +273,8 @@ public class MNotes : Form
             isEdit = true;
             rtb.ReadOnly = true;
             rtb.BackColor = Color.Gray;
+            txt.ReadOnly = true;
+            txt.BackColor = Color.Gray;
         }
     }
 
@@ -149,6 +284,7 @@ public class MNotes : Form
         isInterfaceVisibleCreate = false;
         bt6.Visible = false;
         rtb1.Visible = false;
+        txt1.Visible = false;
 
         if (isInterfaceVisible)
         {
@@ -158,6 +294,8 @@ public class MNotes : Form
                 isEdit = true;
                 rtb.ReadOnly = true;
                 rtb.BackColor = Color.Gray;
+                txt.ReadOnly = true;
+                txt.BackColor = Color.Gray;
                 bt5.Visible = false;
             }
         }
@@ -169,6 +307,8 @@ public class MNotes : Form
                 isEdit = true;
                 rtb.ReadOnly = true;
                 rtb.BackColor = Color.Gray;
+                txt.ReadOnly = true;
+                txt.BackColor = Color.Gray;
                 bt5.Visible = false;
             }
         }
@@ -184,7 +324,9 @@ public class MNotes : Form
         bt5.Visible = false;
         bt6.Visible = false;
         rtb.Visible = false;
+        txt.Visible = false;
         rtb1.Visible = false;
+        txt1.Visible = false;
     }
 
     public void VisibleViewInterface()
@@ -196,6 +338,16 @@ public class MNotes : Form
         bt4.Visible = true;
         bt5.Visible = false;
         rtb.Visible = true;
+        txt.Visible = true;
+    }
+
+    public TextBox CreateTextBox()
+    {
+        TextBox tb = new TextBox();
+        tb.Location = new Point(350, 100);
+        tb.Size = new Size(900, 200);
+        tb.MaxLength = 50;
+        return tb;
     }
 
     public PictureBox CreatePictureBox()
