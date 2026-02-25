@@ -20,6 +20,7 @@ public class MNotes : Form
 
     public MNotes()
     {
+        this.Icon = Ежедневник.Properties.Resources.diary_icon;
         this.FormBorderStyle = FormBorderStyle.None;
         this.Size = new Size(1450, 800);
         this.StartPosition = FormStartPosition.CenterScreen;
@@ -52,10 +53,10 @@ public class MNotes : Form
         panel = new MPanel(1450, this, "Заметки - Проектирование программных систем");
         this.Controls.Add(panel);
 
-        rtb = MTasks.CreateRichTextBox(350, 150, 900, 600);
+        rtb = Task.CreateRichTextBox(350, 150, 900, 600);
         this.Controls.Add(rtb);
 
-        rtb1 = MTasks.CreateRichTextBox(350, 150, 900, 600);
+        rtb1 = Task.CreateRichTextBox(350, 150, 900, 600);
         this.Controls.Add(rtb1);
 
         pnl = CreatePanel(0, 0, 300, 800, "#A8D0E6");
@@ -361,7 +362,7 @@ public class MNotes : Form
         return pictureBox;
     }
 
-    public Panel CreatePanel(int x, int y, int width, int height, string color)
+    public static Panel CreatePanel(int x, int y, int width, int height, string color)
     {
         Panel panel = new Panel();
         panel.Location = new Point(x, y);

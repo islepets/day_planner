@@ -1,8 +1,12 @@
-﻿using System;
+﻿using Npgsql;
+using System;
 using System.Collections.Generic;
-using Npgsql;
-using System.Windows.Forms;
+using System.Globalization;
 using System.Security.Cryptography;
+using System.Windows.Forms;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.TaskbarClock;
 
 namespace Ежедневник
 {
@@ -10,6 +14,9 @@ namespace Ежедневник
     {
         private string connectionString = "Host=localhost;Port=5432;Database=Ежедневник;Username=ilya;Password=111;";
 
+        //------------------------------------------------------------------------------------------------------------
+        // Заметки
+        //------------------------------------------------------------------------------------------------------------
         public int GetTitleIdMax()
         {
             int maxId = 0;
@@ -248,6 +255,120 @@ namespace Ежедневник
             {
                 MessageBox.Show(ex.Message);
                 return false;
+            }
+        }
+
+        //------------------------------------------------------------------------------------------------------------
+        // Задачи
+        //------------------------------------------------------------------------------------------------------------
+
+        /*public int GetCount()
+        {
+            int count = 0;
+            try
+            {
+                using (var conn = new NpgsqlConnection(connectionString))
+                {
+                    conn.Open();
+                    string query = "SELECT COUNT(*) FROM Задача";
+                    using (var cmd = new NpgsqlCommand(query, conn))
+                    {
+                        count = Convert.ToInt32(cmd.ExecuteScalar());
+                        return count;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+                return count;
+            }
+        }*/
+
+        public List<int> GetAllTaskIds()
+        {
+            List<int> ids = new List<int>();
+            try
+            {
+                using (var conn = new NpgsqlConnection(connectionString))
+                {
+                    conn.Open();
+                    string query = "SELECT id FROM Задача ORDER BY id";
+
+                    using (var cmd = new NpgsqlCommand(query, conn))
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            ids.Add(reader.GetInt32(0));
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+            return ids;
+        }
+
+        public string GetRowString(int id, string column)
+        {
+            string title = null;
+            try
+            {
+                using (var conn = new NpgsqlConnection(connectionString))
+                {
+                    conn.Open();
+                    string query = $"SELECT {column} FROM Задача WHERE id = @id";
+                    using (var cmd = new NpgsqlCommand(query , conn))
+                    {
+                        cmd.Parameters.AddWithValue("@id", id);
+                        var result = cmd.ExecuteScalar();
+                        if (result != null) title = result.ToString();
+
+                        return title;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+                return title;
+            }
+        }
+
+        public void UpdateTask(int taskIndex, string title, int status, string date, string time, string description)
+        {
+
+            DateOnly dateOnly = DateOnly.ParseExact(date, "dd.MM.yyyy", CultureInfo.InvariantCulture);
+            TimeOnly timeOnly = TimeOnly.ParseExact(time, "HH:mm", CultureInfo.InvariantCulture);
+
+            try
+            {
+                using (var conn = new NpgsqlConnection(connectionString))
+                {
+                    conn.Open();
+                    string query = @"UPDATE Задача SET Дата = @date, Время = @time, Заголовок = @title, Описание = @description, Статус = @status
+                                    WHERE id = @taskIndex";
+
+                    using (var cmd = new NpgsqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@taskIndex", taskIndex);
+                        cmd.Parameters.AddWithValue("@date", dateOnly);
+                        cmd.Parameters.AddWithValue("@time", timeOnly);
+                        cmd.Parameters.AddWithValue("@title", title);
+                        cmd.Parameters.AddWithValue("@description", description);
+                        cmd.Parameters.AddWithValue("@status", status);
+
+                        cmd.ExecuteNonQuery();
+                    }
+
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
             }
         }
     }
