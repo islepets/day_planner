@@ -262,29 +262,6 @@ namespace Ежедневник
         // Задачи
         //------------------------------------------------------------------------------------------------------------
 
-        /*public int GetCount()
-        {
-            int count = 0;
-            try
-            {
-                using (var conn = new NpgsqlConnection(connectionString))
-                {
-                    conn.Open();
-                    string query = "SELECT COUNT(*) FROM Задача";
-                    using (var cmd = new NpgsqlCommand(query, conn))
-                    {
-                        count = Convert.ToInt32(cmd.ExecuteScalar());
-                        return count;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-                return count;
-            }
-        }*/
-
         public List<int> GetAllTaskIds()
         {
             List<int> ids = new List<int>();
@@ -369,6 +346,157 @@ namespace Ежедневник
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message);
+            }
+        }
+
+        public string GetTaskComment(int taskId)
+        {
+            try
+            {
+                using (var conn = new NpgsqlConnection(connectionString))
+                {
+                    conn.Open();
+                    // Ищем заметку с типом "комментарий" для указанной задачи
+                    string query = @"SELECT Описание FROM Заметка 
+                            WHERE задача_id = @taskId AND Тип = 'комментарий' 
+                            ORDER BY id DESC LIMIT 1";
+
+                    using (var cmd = new NpgsqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@taskId", taskId);
+                        var result = cmd.ExecuteScalar();
+
+                        if (result != null && result != DBNull.Value)
+                        {
+                            return result.ToString();
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при загрузке: {ex.Message}");
+            }
+            return string.Empty;
+        }
+
+        public void SaveTaskComment(int taskId, string comment)
+        {
+            try
+            {
+                using (var conn = new NpgsqlConnection(connectionString))
+                {
+                    conn.Open();
+
+                    string checkQuery = @"SELECT id FROM Заметка 
+                                 WHERE задача_id = @taskId AND Тип = 'комментарий'";
+
+                    using (var checkCmd = new NpgsqlCommand(checkQuery, conn))
+                    {
+                        checkCmd.Parameters.AddWithValue("@taskId", taskId);
+                        var existingId = checkCmd.ExecuteScalar();
+
+                        if (existingId != null)
+                        {
+                            string updateQuery = @"UPDATE Заметка 
+                                          SET Описание = @comment, 
+                                              Дата = @date, 
+                                              Время = @time 
+                                          WHERE id = @id";
+
+                            using (var updateCmd = new NpgsqlCommand(updateQuery, conn))
+                            {
+                                updateCmd.Parameters.AddWithValue("@id", Convert.ToInt32(existingId));
+                                updateCmd.Parameters.AddWithValue("@comment", comment);
+                                updateCmd.Parameters.AddWithValue("@date", DateTime.Now.Date);
+                                updateCmd.Parameters.AddWithValue("@time", DateTime.Now.TimeOfDay);
+                                updateCmd.ExecuteNonQuery();
+                            }
+                        }
+                        else
+                        {
+                            string insertQuery = @"INSERT INTO Заметка 
+                                          (задача_id, Дата, Время, Описание, Тип) 
+                                          VALUES 
+                                          (@taskId, @date, @time, @comment, 'комментарий')";
+
+                            using (var insertCmd = new NpgsqlCommand(insertQuery, conn))
+                            {
+                                insertCmd.Parameters.AddWithValue("@taskId", taskId);
+                                insertCmd.Parameters.AddWithValue("@comment", comment);
+                                insertCmd.Parameters.AddWithValue("@date", DateTime.Now.Date);
+                                insertCmd.Parameters.AddWithValue("@time", DateTime.Now.TimeOfDay);
+                                insertCmd.ExecuteNonQuery();
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+        }
+        public void CreateNewTask(string title, int status, string description)
+        {
+            try
+            {
+                using (var conn = new NpgsqlConnection(connectionString))
+                {
+                    conn.Open();
+                    string query = @"INSERT INTO Задача (Дата, Время, Заголовок, Описание, Статус)
+                                          VALUES 
+                                          (@date, @time, @title, @description, @status)";
+
+                    using (var cmd = new NpgsqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@date", DateTime.Now.Date);
+                        cmd.Parameters.AddWithValue("@time", DateTime.Now.TimeOfDay);
+                        cmd.Parameters.AddWithValue("@title", title);
+                        cmd.Parameters.AddWithValue("@description", description);
+                        cmd.Parameters.AddWithValue("@status", status);
+
+                        cmd.ExecuteNonQuery();
+                    }
+
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+        }
+
+        public bool DeleteTask(int id)
+        {
+            try
+            {
+                using (var conn = new NpgsqlConnection(connectionString))
+                {
+                    conn.Open();
+                    string query = "DELETE FROM Задача WHERE id = @id";
+                    using (var cmd = new NpgsqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@id", id);
+                        int result = cmd.ExecuteNonQuery();
+
+                        if (result > 0)
+                        {
+                            return true;
+                        }
+                        else
+                        {
+                            MessageBox.Show("Задача не найдена",
+                                "Предупреждение", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            return false;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+                return false;
             }
         }
     }

@@ -162,9 +162,17 @@ public class MTasks : Form
             RichTextBox rtb = CreateTaskRichTextBox(taskId, 10, 160, 250, 80, 8, "Описание");
             gb.Controls.Add(rtb);
 
-            Button b = Task.CreateButton(10, 245, 250, 35, "Заметка");
+            Button b = Task.CreateButton(10, 245, 125, 35, "Заметка");
+            b.Click += CreateNotes;
+            b.Tag = taskId;
             b.Enabled = false;
             gb.Controls.Add(b);
+
+            Button b1 = Task.CreateButton(135, 245, 125, 35, "Удалить");
+            b1.Click += DeleteTask;
+            b1.Tag = taskId;
+            b1.Enabled = false;
+            gb.Controls.Add(b1);
 
             int row = i / 2;
             int column = i % 2;
@@ -177,6 +185,28 @@ public class MTasks : Form
         return panel;
     }
 
+    public void DeleteTask(object sender, EventArgs e)
+    {
+        Button btn = sender as Button;
+        if (btn != null && btn.Tag != null)
+        {
+            int id = (int)btn.Tag;
+            DatabaseHelper bd = new DatabaseHelper();
+            bd.DeleteTask(id);
+            MessageBox.Show("Задача удалена!");
+        }
+    }
+
+    public void CreateNotes(object sender, EventArgs e)
+    {
+        Button btn = sender as Button;
+        if (btn != null && btn.Tag != null)
+        {
+            int id = (int)btn.Tag;
+            TaskNote taskNote = new TaskNote(id);
+            taskNote.Show();
+        }
+    }
     private RichTextBox CreateTaskRichTextBox(int ind, int x, int y, int width, int height, int font, string column)
     {
         DatabaseHelper bd = new DatabaseHelper();

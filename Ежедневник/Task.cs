@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Windows.Forms.VisualStyles;
+using Ежедневник;
 
 public class Task : Form
 {
     private bool checkBoxStatus = false;
+    TextBox txt;
+    RichTextBox rtb;
     public Task()
     {
         this.Icon = Ежедневник.Properties.Resources.diary_icon;
@@ -36,7 +39,7 @@ public class Task : Form
         CheckBox chb = CreateCheckBox(200, 35, 170, 25);
         gb.Controls.Add(chb);
 
-        TextBox txt = CreateTextBox(10, 100, 380, 25);
+        txt = CreateTextBox(10, 100, 380, 25);
         gb.Controls.Add(txt);
 
         Label lbl = CreateLabel(10, 75, 180, 25, "Заголовок");
@@ -45,16 +48,22 @@ public class Task : Form
         Label lbl1 = CreateLabel(10, 140, 180, 25, "Описание");
         gb.Controls.Add(lbl1);
 
-        RichTextBox rtb = CreateRichTextBox(10, 170, 380, 150);
+        rtb = CreateRichTextBox(10, 170, 380, 150);
         gb.Controls.Add(rtb);
 
-        Button b1 = CreateButton(10, 330, 190, 40, "Заметка");
-        gb.Controls.Add(b1);
-
-        Button b2 = CreateButton(200, 330, 190, 40, "Готово");
+        Button b2 = CreateButton(10, 330, 380, 60, "Готово");
+        b2.Click += CreateNewTask;
         gb.Controls.Add(b2);
 
         return gb;
+    }
+
+    public void CreateNewTask(object sender,  EventArgs e)
+    {
+        DatabaseHelper bd = new DatabaseHelper();
+        MessageBox.Show("Задача создана!", "Успех", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        bd.CreateNewTask(txt.Text.ToString(), 2, rtb.Text.ToString());
+        this.Close();
     }
 
     public static Button CreateButton(int x, int y, int width, int height, string content)

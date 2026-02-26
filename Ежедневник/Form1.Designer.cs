@@ -76,6 +76,7 @@
             button3.TabIndex = 2;
             button3.Text = "Отчет";
             button3.UseVisualStyleBackColor = true;
+            button3.Click += button3_Click;
             // 
             // pictureBox2
             // 

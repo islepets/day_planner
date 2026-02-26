@@ -59,5 +59,10 @@ namespace Ежедневник
 
             return button;
         }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            CreateReport createReport = new CreateReport();
+        }
     }
 }
